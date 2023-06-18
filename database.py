@@ -21,3 +21,9 @@ def create_database():
 def connect_db():
     conn = sqlite3.connect('task_manager.db')
     return conn
+
+
+def get_tasks(conn):
+    c = conn.cursor()
+    c.execute("SELECT * FROM tasks")
+    return c.fetchall()

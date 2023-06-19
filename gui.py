@@ -14,14 +14,17 @@ def create_gui():
 
     tasks = get_tasks(conn)
 
-    task_list = Listbox(window, selectmode=SINGLE)
-    task_list.pack()
+    task_list_frame = Frame(window)
+    task_list = Listbox(task_list_frame, selectmode=SINGLE)
 
     task_list.bind("<<ListboxSelect>>", lambda event: show_task_details(
-        window, tasks[task_list.curselection()[0]]))
+        window, tasks[task_list.curselection()[0]], task_list_frame))
 
     for task in tasks:
         task_list.insert(END, task[1])
+
+    task_list.pack()
+    task_list_frame.pack()
 
     add_task_button = Button(
         window, text="Add Task", command=lambda: open_add_task_dialog(window, conn, task_list))
@@ -31,15 +34,25 @@ def create_gui():
     conn.close()
 
 
-def show_task_details(window, task):
-    task_details_window = Toplevel(window)
-    task_details_window.title(task[1])
+def show_task_details(window, task, task_list_frame):
+    task_list_frame.pack_forget()
+
+    task_details_frame = Frame(window)
 
     for i, detail in enumerate(task):
-        label = Label(task_details_window, text=detail)
+        label = Label(task_details_frame, text=detail)
         label.grid(row=i, column=0)
 
-    task_details_window.mainloop()
+    back_button = Button(task_details_frame, text="Back", command=lambda: show_task_list(
+        task_details_frame, task_list_frame))
+    back_button.grid(row=len(task)+1, column=0)
+
+    task_details_frame.pack()
+
+
+def show_task_list(task_details_frame, task_list_frame):
+    task_details_frame.pack_forget()
+    task_list_frame.pack()
 
 
 def open_add_task_dialog(window, conn, tasks_list):

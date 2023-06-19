@@ -3,6 +3,7 @@ from tkinter import messagebox
 from datetime import datetime
 
 from database import connect_db, get_tasks
+from label import *
 
 
 def create_gui():
@@ -13,11 +14,14 @@ def create_gui():
 
     tasks = get_tasks(conn)
 
-    task_list = Listbox(window)
+    task_list = Listbox(window, selectmode=SINGLE)
     task_list.pack()
 
+    task_list.bind("<<ListboxSelect>>", lambda event: show_task_details(
+        window, tasks[task_list.curselection()[0]]))
+
     for task in tasks:
-        task_list.insert(END, task)
+        task_list.insert(END, task[1])
 
     add_task_button = Button(
         window, text="Add Task", command=lambda: open_add_task_dialog(window, conn, task_list))
@@ -27,41 +31,28 @@ def create_gui():
     conn.close()
 
 
+def show_task_details(window, task):
+    task_details_window = Toplevel(window)
+    task_details_window.title(task[1])
+
+    for i, detail in enumerate(task):
+        label = Label(task_details_window, text=detail)
+        label.grid(row=i, column=0)
+
+    task_details_window.mainloop()
+
+
 def open_add_task_dialog(window, conn, tasks_list):
     add_task_window = Toplevel(window)
     add_task_window.title("Add Task")
 
-    task_name_label = Label(add_task_window, text="Task Name")
-    task_name_label.pack()
+    task_name_entry = create_task_name(add_task_window)
+    task_description_entry = create_description(add_task_window)
+    task_due_date_entry = create_task_due_date(add_task_window)
+    task_priority_entry = create_task_priority(add_task_window)
+    task_status_entry = create_task_status(add_task_window)
 
-    task_name_entry = Entry(add_task_window)
-    task_name_entry.pack()
-
-    task_description_label = Label(add_task_window, text="Task Description")
-    task_description_label.pack()
-
-    task_description_entry = Entry(add_task_window)
-    task_description_entry.pack()
-
-    task_due_date_label = Label(add_task_window, text="Task Due Date")
-    task_due_date_label.pack()
-
-    task_due_date_entry = Entry(add_task_window)
-    task_due_date_entry.pack()
-
-    task_priority_label = Label(add_task_window, text="Task Priority")
-    task_priority_label.pack()
-
-    task_priority_entry = Entry(add_task_window)
-    task_priority_entry.pack()
-
-    task_status_label = Label(add_task_window, text="Task Status")
-    task_status_label.pack()
-
-    task_status_entry = Entry(add_task_window)
-    task_status_entry.pack()
-
-    add_button = Button(add_task_window, text="Add Task", command=lambda: add_task(
+    add_button = Button(add_task_window, text="Add Task", command=lambda: check_and_add_task(
         conn,
         tasks_list,
         add_task_window,
@@ -84,7 +75,7 @@ def verify_date(date):
         return False
 
 
-def add_task(conn, tasks_list, add_task_window, name, description, due_date, priority, status):
+def check_and_add_task(conn, tasks_list, add_task_window, name, description, due_date, priority, status):
     if not all([name, description, due_date, priority, status]):
         messagebox.showerror("Error", "All fields are required")
         return
@@ -92,6 +83,11 @@ def add_task(conn, tasks_list, add_task_window, name, description, due_date, pri
     if not verify_date(due_date):
         return
 
+    add_task(conn, tasks_list, add_task_window, name,
+             description, due_date, priority, status)
+
+
+def add_task(conn, tasks_list, add_task_window, name, description, due_date, priority, status):
     with conn:
         c = conn.cursor()
 
